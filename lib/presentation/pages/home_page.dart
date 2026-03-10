@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _taskController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
 
   @override
   void initState() {
@@ -30,30 +32,54 @@ class _HomePageState extends State<HomePage> {
     if (_taskController.text.trim().isEmpty) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     try {
-      await Provider.of<TaskProvider>(context, listen: false)
-          .addTask(_taskController.text.trim(), authProvider.token);
-      debugPrint('Task added successfully');
+      await Provider.of<TaskProvider>(context, listen: false).addTask(
+        _taskController.text.trim(),
+        _nameController.text.trim(),
+        _timeController.text.trim(),
+        authProvider.token,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Task added successfully!')),
         );
       }
       _taskController.clear();
+      _nameController.clear();
+      _timeController.clear();
     } catch (e) {
       debugPrint('Error adding task: $e');
     }
   }
 
   Future<void> _showEditDialog(TaskModel task) async {
-    final controller = TextEditingController(text: task.title);
+    final titleController = TextEditingController(text: task.title);
+    final nameController = TextEditingController(text: task.name);
+    final timeController = TextEditingController(text: task.time);
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Edit Task'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: 'Task Name'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Task Title'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: timeController,
+                  decoration: const InputDecoration(labelText: 'Time'),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -62,12 +88,18 @@ class _HomePageState extends State<HomePage> {
             ),
             TextButton(
               onPressed: () async {
-                final newTitle = controller.text.trim();
+                final newTitle = titleController.text.trim();
                 if (newTitle.isNotEmpty) {
                   final authProvider =
                       Provider.of<AuthProvider>(context, listen: false);
                   await Provider.of<TaskProvider>(context, listen: false)
-                      .editTask(task, newTitle, authProvider.token);
+                      .editTask(
+                    task,
+                    newTitle,
+                    nameController.text.trim(),
+                    timeController.text.trim(),
+                    authProvider.token,
+                  );
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -112,7 +144,7 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius:
@@ -125,33 +157,52 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _taskController,
-                        decoration: InputDecoration(
-                          hintText: 'What needs to be done?',
-                          prefixIcon: const Icon(Icons.add_task,
-                              color: Colors.deepPurple),
-                          fillColor: Colors.grey[100],
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
+                    TextField(
+                      controller: _taskController,
+                      decoration: const InputDecoration(
+                        hintText: 'Task Title',
+                        prefixIcon: Icon(Icons.title, color: Colors.deepPurple),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              hintText: 'Name',
+                              prefixIcon:
+                                  Icon(Icons.person, color: Colors.deepPurple),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _timeController,
+                            decoration: const InputDecoration(
+                              hintText: 'Time',
+                              prefixIcon: Icon(Icons.access_time,
+                                  color: Colors.deepPurple),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
                         onPressed: _addTask,
+                        icon: const Icon(Icons.add),
+                        label: const Text('ADD TASK'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -210,14 +261,6 @@ class _HomePageState extends State<HomePage> {
                                 onTap: () async {
                                   await taskProvider.toggleTask(
                                       task, authProvider.token);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Task updated!'),
-                                        duration: Duration(seconds: 1),
-                                      ),
-                                    );
-                                  }
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
@@ -242,7 +285,7 @@ class _HomePageState extends State<HomePage> {
                                 task.title,
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.bold,
                                   decoration: task.completed
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -250,6 +293,39 @@ class _HomePageState extends State<HomePage> {
                                       ? Colors.grey
                                       : Colors.black87,
                                 ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (task.name.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.person,
+                                              size: 14, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text(task.name,
+                                              style: const TextStyle(
+                                                  color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                  if (task.time.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.access_time,
+                                              size: 14, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text(task.time,
+                                              style: const TextStyle(
+                                                  color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -267,15 +343,6 @@ class _HomePageState extends State<HomePage> {
                                     onPressed: () async {
                                       await taskProvider.deleteTask(
                                           task.id!, authProvider.token);
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Task deleted'),
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                      }
                                     },
                                     visualDensity: VisualDensity.compact,
                                   ),

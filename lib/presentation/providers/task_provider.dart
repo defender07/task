@@ -23,8 +23,9 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addTask(String title, String? token) async {
-    final newTask = TaskModel(title: title);
+  Future<void> addTask(
+      String title, String name, String time, String? token) async {
+    final newTask = TaskModel(title: title, name: name, time: time);
     try {
       final id = await _repository.createTask(newTask, token);
       _tasks.add(newTask.copyWith(id: id));
@@ -48,12 +49,15 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> editTask(TaskModel task, String newTitle, String? token) async {
+  Future<void> editTask(TaskModel task, String newTitle, String newName,
+      String newTime, String? token) async {
     try {
-      await _repository.updateTaskTitle(task.id!, newTitle, token);
+      final updatedTask =
+          task.copyWith(title: newTitle, name: newName, time: newTime);
+      await _repository.updateTask(updatedTask, token);
       final index = _tasks.indexWhere((t) => t.id == task.id);
       if (index != -1) {
-        _tasks[index] = task.copyWith(title: newTitle);
+        _tasks[index] = updatedTask;
         notifyListeners();
       }
     } catch (e) {

@@ -1,11 +1,15 @@
 class TaskModel {
   final String? id;
   final String title;
+  final String name;
+  final String time;
   final bool completed;
 
   TaskModel({
     this.id,
     required this.title,
+    this.name = '',
+    this.time = '',
     this.completed = false,
   });
 
@@ -14,6 +18,8 @@ class TaskModel {
     return TaskModel(
       id: id,
       title: json['title'] ?? '',
+      name: json['name'] ?? '',
+      time: json['time'] ?? '',
       completed: json['completed'] ?? false,
     );
   }
@@ -21,6 +27,8 @@ class TaskModel {
   Map<String, dynamic> toJson() {
     return {
       'title': title,
+      'name': name,
+      'time': time,
       'completed': completed,
     };
   }
@@ -28,11 +36,15 @@ class TaskModel {
   TaskModel copyWith({
     String? id,
     String? title,
+    String? name,
+    String? time,
     bool? completed,
   }) {
     return TaskModel(
       id: id ?? this.id,
       title: title ?? this.title,
+      name: name ?? this.name,
+      time: time ?? this.time,
       completed: completed ?? this.completed,
     );
   }

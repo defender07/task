@@ -29,10 +29,9 @@ class TaskRepository {
         data: {'completed': completed});
   }
 
-  Future<void> updateTaskTitle(
-      String taskId, String title, String? token) async {
-    await _dio
-        .patch('$_itemBaseUrl$taskId.json?auth=$token', data: {'title': title});
+  Future<void> updateTask(TaskModel task, String? token) async {
+    await _dio.patch('$_itemBaseUrl${task.id}.json?auth=$token',
+        data: task.toJson());
   }
 
   Future<void> deleteTask(String taskId, String? token) async {
